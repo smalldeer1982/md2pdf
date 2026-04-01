@@ -178,6 +178,7 @@ def register_fonts():
 #   header_style: "full" | "minimal" | "none"
 #   code_style: "bg" (background fill) | "border" (left border only)
 #   cover_style: "centered" | "left-aligned" | "minimal"
+#   page_decoration: "none" | "top-bar" | "left-stripe" | "side-rule" | "corner-marks"
 
 _DEFAULT_LAYOUT = {
     "margins": (25, 22, 28, 25),
@@ -185,6 +186,7 @@ _DEFAULT_LAYOUT = {
     "h1_size": 26, "h2_size": 18, "h3_size": 12,
     "heading_align": "center", "heading_decoration": "rules",
     "header_style": "full", "code_style": "bg", "cover_style": "centered",
+    "page_decoration": "none",
 }
 
 THEMES = {
@@ -196,6 +198,7 @@ THEMES = {
             "body_font":"Serif","body_size":10.5,"body_leading":17,
             "heading_align":"center","heading_decoration":"rules",
             "header_style":"full","code_style":"bg","cover_style":"centered",
+            "page_decoration":"top-bar",
         }
     },
     "nord-frost": {
@@ -206,6 +209,7 @@ THEMES = {
             "body_font":"Sans","body_size":10,"body_leading":16,
             "h3_size":11,"heading_align":"left","heading_decoration":"underline",
             "header_style":"minimal","code_style":"border","cover_style":"left-aligned",
+            "page_decoration":"left-stripe",
         }
     },
     "github-light": {
@@ -216,6 +220,7 @@ THEMES = {
             "body_font":"Sans","body_size":10,"body_leading":16.5,
             "heading_align":"left","heading_decoration":"none",
             "header_style":"minimal","code_style":"bg","cover_style":"left-aligned",
+            "page_decoration":"left-stripe",
         }
     },
     "solarized-light": {
@@ -236,6 +241,7 @@ THEMES = {
             "body_font":"Sans","body_size":10.5,"body_leading":17,
             "heading_align":"left","heading_decoration":"underline",
             "header_style":"full","code_style":"bg","cover_style":"centered",
+            "page_decoration":"top-bar",
         }
     },
     "monokai-warm": {
@@ -259,6 +265,7 @@ THEMES = {
             "h1_size":24,"h2_size":16,"h3_size":11,
             "heading_align":"left","heading_decoration":"none",
             "header_style":"none","code_style":"border","cover_style":"minimal",
+            "page_decoration":"side-rule",
         }
     },
     "classic-thesis": {
@@ -270,6 +277,7 @@ THEMES = {
             "h1_size":28,"h2_size":20,
             "heading_align":"center","heading_decoration":"rules",
             "header_style":"full","code_style":"bg","cover_style":"centered",
+            "page_decoration":"corner-marks",
         }
     },
     "ieee-journal": {
@@ -282,6 +290,7 @@ THEMES = {
             "h1_size":22,"h2_size":14,"h3_size":11,
             "heading_align":"left","heading_decoration":"underline",
             "header_style":"minimal","code_style":"border","cover_style":"left-aligned",
+            "page_decoration":"top-band",
         }
     },
     "elegant-book": {
@@ -294,6 +303,7 @@ THEMES = {
             "h1_size":28,"h2_size":20,
             "heading_align":"center","heading_decoration":"dot",
             "header_style":"full","code_style":"bg","cover_style":"centered",
+            "page_decoration":"double-rule",
         }
     },
     "chinese-red": {
@@ -305,6 +315,7 @@ THEMES = {
             "h1_size":28,"h2_size":20,
             "heading_align":"center","heading_decoration":"rules",
             "header_style":"full","code_style":"bg","cover_style":"centered",
+            "page_decoration":"top-bar",
         }
     },
     "ink-wash": {
@@ -317,6 +328,7 @@ THEMES = {
             "h1_size":24,"h2_size":16,"h3_size":11,
             "heading_align":"center","heading_decoration":"dot",
             "header_style":"none","code_style":"border","cover_style":"minimal",
+            "page_decoration":"none",
         }
     },
 }
@@ -748,10 +760,67 @@ class PDFBuilder:
 
         c.restoreState()
 
+    def _draw_page_decoration(self, c):
+        """Draw theme-specific page decorations visible even at thumbnail size."""
+        T = self.T; deco = self.L.get("page_decoration", "none")
+        if deco == "top-bar":
+            # Thin accent bar at very top of page
+            c.setFillColor(T["accent"])
+            c.rect(0, self.page_h - 2.5*mm, self.page_w, 2.5*mm, fill=1, stroke=0)
+        elif deco == "left-stripe":
+            # Thick colored stripe on left edge
+            c.setFillColor(T["accent"])
+            c.rect(0, 0, 5*mm, self.page_h, fill=1, stroke=0)
+        elif deco == "side-rule":
+            # Thin vertical rule on left side (Tufte-style margin line)
+            c.setStrokeColor(T["border"]); c.setLineWidth(0.4)
+            c.line(self.lm - 5*mm, self.bm, self.lm - 5*mm, self.page_h - self.tm + 5*mm)
+        elif deco == "corner-marks":
+            # Decorative corner brackets
+            c.setStrokeColor(T["accent"]); c.setLineWidth(0.8)
+            m = 12*mm; clen = 12*mm
+            # Top-left
+            c.line(m, self.page_h - m, m + clen, self.page_h - m)
+            c.line(m, self.page_h - m, m, self.page_h - m - clen)
+            # Top-right
+            c.line(self.page_w - m, self.page_h - m, self.page_w - m - clen, self.page_h - m)
+            c.line(self.page_w - m, self.page_h - m, self.page_w - m, self.page_h - m - clen)
+            # Bottom-left
+            c.line(m, m, m + clen, m)
+            c.line(m, m, m, m + clen)
+            # Bottom-right
+            c.line(self.page_w - m, m, self.page_w - m - clen, m)
+            c.line(self.page_w - m, m, self.page_w - m, m + clen)
+        elif deco == "top-band":
+            # Wide accent band at top (IEEE-style)
+            c.setFillColor(T["accent"])
+            c.rect(0, self.page_h - 8*mm, self.page_w, 8*mm, fill=1, stroke=0)
+            # White text header inside band
+            header_title = self.cfg.get("header_title", "")
+            if header_title:
+                c.setFillColor(white)
+                _draw_mixed(c, self.lm, self.page_h - 6*mm, header_title, 7.5)
+            ch = _cur_chapter[0]
+            if ch:
+                c.setFillColor(white)
+                _draw_mixed(c, self.page_w - self.rm, self.page_h - 6*mm, ch[:40], 7.5, anchor="right")
+        elif deco == "double-rule":
+            # Double horizontal rules at top and bottom (elegant book style)
+            c.setStrokeColor(T["accent"]); c.setLineWidth(0.6)
+            y_top = self.page_h - 14*mm
+            c.line(self.lm, y_top, self.page_w - self.rm, y_top)
+            c.line(self.lm, y_top - 2*mm, self.page_w - self.rm, y_top - 2*mm)
+            y_bot = self.bm - 4*mm
+            c.line(self.lm, y_bot, self.page_w - self.rm, y_bot)
+            c.line(self.lm, y_bot + 2*mm, self.page_w - self.rm, y_bot + 2*mm)
+
     def _normal_page(self, c, doc):
         self._draw_bg(c); pg = c.getPageNumber()
         c.saveState()
         T = self.T; hs = self.L["header_style"]
+
+        # Page decoration (drawn first, behind content)
+        self._draw_page_decoration(c)
 
         # Watermark
         wm = self.cfg.get("watermark", "")
@@ -763,8 +832,9 @@ class PDFBuilder:
                     c.drawCentredString(dx, dy, wm)
             c.rotate(-35); c.translate(-self.page_w/2, -self.page_h/2)
 
-        if hs == "full":
-            # Header line + title + chapter
+        # Header (skip if top-band decoration already drew header)
+        deco = self.L.get("page_decoration", "none")
+        if hs == "full" and deco != "top-band":
             c.setStrokeColor(T["border"]); c.setLineWidth(0.5)
             c.line(self.lm, self.page_h - 20*mm, self.page_w - self.rm, self.page_h - 20*mm)
             c.setFillColor(T["ink_faded"])
@@ -774,36 +844,32 @@ class PDFBuilder:
             ch = _cur_chapter[0]
             if ch:
                 _draw_mixed(c, self.page_w - self.rm, self.page_h - 18*mm, ch[:40], 8, anchor="right")
-        elif hs == "minimal":
-            # Just page number in header, no line
+        elif hs == "minimal" and deco != "top-band":
             c.setFillColor(T["ink_faded"]); c.setFont("Sans", 8)
             c.drawRightString(self.page_w - self.rm, self.page_h - 16*mm, str(pg))
 
-        # Footer
-        if hs != "none":
+        # Footer (skip line if double-rule decoration already drew it)
+        if hs != "none" and deco not in ("double-rule",):
             c.setStrokeColor(T["border"])
             c.line(self.lm, self.bm - 8*mm, self.page_w - self.rm, self.bm - 8*mm)
 
-        # Footer center: page number with accent (full & minimal)
+        # Footer center: page number
         if hs == "full":
             c.setFillColor(T["accent"]); c.setFont("Serif", 9)
             c.drawCentredString(self.page_w/2, self.bm - 16*mm, f"\u2014  {pg}  \u2014")
         elif hs == "minimal":
-            # Just a simple number
             c.setFillColor(T["ink_faded"]); c.setFont("Sans", 8)
             c.drawCentredString(self.page_w/2, self.bm - 14*mm, str(pg))
         elif hs == "none":
-            # Bottom page number only, no lines
             c.setFillColor(T["ink_faded"]); c.setFont("Serif", 8)
             c.drawCentredString(self.page_w/2, self.bm - 10*mm, str(pg))
 
-        # Footer left: author/brand
+        # Footer left/right
         if hs == "full":
             footer_left = self.cfg.get("footer_left", self.cfg.get("author", ""))
             if footer_left:
                 c.setFillColor(T["ink_faded"])
                 _draw_mixed(c, self.lm, self.bm - 16*mm, footer_left, 8)
-            # Footer right: date
             c.setFillColor(T["ink_faded"])
             _draw_mixed(c, self.page_w - self.rm, self.bm - 16*mm,
                         self.cfg.get("date", str(date.today())), 8, anchor="right")
