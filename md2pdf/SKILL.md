@@ -50,46 +50,43 @@ python md2pdf/scripts/md2pdf.py \
 
 All parameters except `--input` are optional — sensible defaults are applied.
 
-## Interactive Workflows
+## Pre-Conversion Options (MANDATORY)
 
-When converting a document, the skill should interactively ask the user about
-optional enhancements before running the conversion.
+**IMPORTANT: You MUST use the `AskUserQuestion` tool to ask these questions BEFORE
+running the conversion. Do NOT list options as plain text — use the tool so the user
+gets a proper interactive prompt. Ask all three in a SINGLE `AskUserQuestion` call.**
 
-### Workflow: Frontispiece Image
+Use `AskUserQuestion` with this exact format:
 
-Ask the user if they want a frontispiece (扉页) image inserted after the cover page:
+```
+转 PDF 前需要确认几个选项：
 
-1. **Skip** — No frontispiece image
-2. **Local image** — User provides a local file path (png/jpg)
-3. **AI generate** — Generate one using an image generation tool based on document content
+1. 扉页图片（封面后的全页插图）
+   a) 跳过
+   b) 我提供本地图片路径
+   c) AI 根据内容自动生成
 
-If "AI generate": read the document title and first few paragraphs, craft a prompt
-matching the document's topic, generate the image, show it for approval, then pass
-via `--frontispiece /path/to/image.png`.
+2. 水印（每页淡色对角线文字）
+   a) 不加水印
+   b) 自定义水印文字（如 "DRAFT"、"内部资料"、"仅供学习"）
 
-### Workflow: Watermark
+3. 封底宣传物料（名片/二维码/品牌信息）
+   a) 跳过
+   b) 我提供图片（名片/二维码/logo 等）
+   c) 纯文字（网站/公众号/版权声明等）
 
-Ask the user if they want a watermark (水印) on every page:
+请回复你的选择，如 "1a 2b:仅供学习参考 3b:/path/to/qr.png"
+```
 
-1. **Skip** — No watermark
-2. **Custom text** — User provides watermark text (e.g. "DRAFT", "内部资料", "仅供学习")
+### Handling Responses
 
-If provided, pass via `--watermark "文字内容"`. The watermark renders as a faint
-diagonal overlay on content pages. Common patterns:
-- Draft/review: "DRAFT", "草稿", "待审阅"
-- Access control: "内部资料 请勿外传", "Confidential"
-- Attribution: Author name or organization name
-
-### Workflow: Back Cover Promotional Materials
-
-Ask the user if they want promotional materials (宣传物料) on the back cover:
-
-1. **Skip** — No promotional materials
-2. **Image** — Business card, QR code, or branding image (png/jpg)
-3. **Text-only** — Name, website, slogan, etc.
-
-If image: pass via `--banner <path>`. If text: use `--disclaimer` and `--copyright`.
-Common materials: WeChat QR code, business card, brand logo, multi-platform QR composite.
+- **Frontispiece "AI generate"**: Read the document title + first paragraphs, use an
+  image generation tool to create a themed illustration, show for approval, then
+  pass via `--frontispiece /path/to/image.png`
+- **Frontispiece "local"**: Use path directly via `--frontispiece <path>`
+- **Watermark**: Pass via `--watermark "文字内容"`
+- **Back cover image**: Pass via `--banner <path>` (recommend 1200px+ wide)
+- **Back cover text**: Use `--disclaimer "声明文字"` and `--copyright "© 版权信息"`
 
 ## Architecture
 
